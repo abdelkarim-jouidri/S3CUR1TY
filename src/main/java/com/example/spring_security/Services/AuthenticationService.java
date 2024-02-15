@@ -4,10 +4,14 @@ import com.example.spring_security.Models.Role;
 import com.example.spring_security.Models.User;
 import com.example.spring_security.Repositories.RoleRepository;
 import com.example.spring_security.Repositories.UserRepository;
-import com.example.spring_security.dtos.LoginResponseDTO;
+import com.example.spring_security.dtos.FailedLoginResponseDTO;
+import com.example.spring_security.dtos.SuccessfulLoginResponseDTO;
+import com.example.spring_security.dtos.UserDTO;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.modelmapper.ModelMapper;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
@@ -26,26 +30,28 @@ public class AuthenticationService {
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
     private final TokenService tokenService;
+    private final ModelMapper modelMapper;
 
-    public LoginResponseDTO login(String username, String password){
+    public Object login(String username, String password){
         try {
             Authentication authentication = authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(username, password)
             );
 
             String token = tokenService.generateJwt(authentication);
-            return LoginResponseDTO.
+            User user = userRepository.findByUserName(username).get();
+            UserDTO userDTO = modelMapper.map(user, UserDTO.class);
+            return SuccessfulLoginResponseDTO.
                     builder().
-                    user(userRepository.findByUserName(username).get()).
+                    user(userDTO).
                     token(token).
                     build();
 
         }catch (AuthenticationException e){
-            e.printStackTrace();
-            return LoginResponseDTO.builder().token("").user(null).build();
+            return FailedLoginResponseDTO.builder().message("Incorrect credentials !!").build();
         }
     }
-    public User registerUser(String username, String password){
+    public UserDTO registerUser(String username, String password){
         String encodedPassword = passwordEncoder.encode(password);
         Role userRole = roleRepository.findByAuthority("user").get();
         Set<Role> authorities = new HashSet<>();
@@ -55,7 +61,8 @@ public class AuthenticationService {
                 password(encodedPassword).
                 authorities(authorities).
                 build();
-        return userRepository.save(builtUser);
+        UserDTO userDTO = modelMapper.map(userRepository.save(builtUser), UserDTO.class);
+        return userDTO;
     }
 
 }
