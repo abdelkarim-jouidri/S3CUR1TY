@@ -24,7 +24,7 @@ public class TokenService {
         String auths = authentication.
                 getAuthorities().
                 stream().map(GrantedAuthority::getAuthority).
-                collect(Collectors.joining(""));
+                collect(Collectors.joining(" "));
         JwtClaimsSet claimsSet = JwtClaimsSet.builder()
                 .issuer("self")
                 .issuedAt(now).
