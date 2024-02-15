@@ -10,6 +10,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -25,9 +26,13 @@ public class SpringSecurityApplication {
 		return args -> {
 			if(roleRepository.findByAuthority("admin").isPresent()) return;
 			Role adminRole = roleRepository.save(Role.builder().authority("admin").build());
+			if(roleRepository.findByAuthority("user").isPresent()) return;
+			Role userRole = roleRepository.save(Role.builder().authority("user").build());
+
 			Set<Role> roles= new HashSet<>();
+			roles.add(userRole);
 			roles.add(adminRole);
-			User admin = User.builder().userName("admin").password("pa$$word").authorities(roles).build();
+			User admin = User.builder().userName("admin").password(passwordEncoder.encode("pa$$word")).authorities(roles).build();
 			userRepository.save(admin);
 
 		};
